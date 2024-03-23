@@ -1,17 +1,39 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:mysql1/mysql1.dart';
 
+// Middleware para adicionar cabeçalhos de CORS às respostas
+Middleware corsHeadersMiddleware({Map<String, String>? headers}) {
+  final corsHeaders = headers ??
+      {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, Content-Type',
+      };
+
+  return (Handler innerHandler) {
+    return (Request request) async {
+      if (request.method == 'OPTIONS') {
+        return Response.ok('', headers: corsHeaders);
+      }
+
+      final response = await innerHandler(request);
+      return response.change(headers: corsHeaders);
+    };
+  };
+}
+
 // Handler para buscar notebooks
 Future<Response> getNotebooks(Request request) async {
   final settings = ConnectionSettings(
-    host: 'localhost', // Substitua com o endereço do seu servidor MySQL
+    host: 'localhost',
     port: 3306,
-    user: 'seu_usuario',
-    password: 'sua_senha',
-    db: 'nome_do_seu_banco',
+    user: 'root',
+    password: '@Inspiron1',
+    db: 'db_assistente',
   );
 
   try {
@@ -31,7 +53,7 @@ Future<Response> getNotebooks(Request request) async {
 
     // Retornando os resultados como JSON
     return Response.ok(
-      notebooksList.toString(),
+      jsonEncode(notebooksList),
       headers: {'Content-Type': 'application/json'},
     );
   } catch (e) {
@@ -45,7 +67,12 @@ void main(List<String> args) async {
   // Configurando o router
   final router = Router()..get('/notebooks', getNotebooks);
 
+  // Adicionando o middleware de CORS
+  final handler = const Pipeline()
+      .addMiddleware(corsHeadersMiddleware())
+      .addHandler(router);
+
   // Configurando o servidor
-  final server = await shelf_io.serve(router, 'localhost', 8080);
+  final server = await shelf_io.serve(handler, 'localhost', 8080);
   print('Servidor rodando em http://${server.address.host}:${server.port}');
 }
