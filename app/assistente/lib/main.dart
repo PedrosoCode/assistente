@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'comecar.dart';
 import 'opcoes.dart';
+import 'TestePage.dart';
 
 void main() {
   runApp(MyApp());
@@ -43,6 +44,15 @@ class HomeScreen extends StatelessWidget {
                 );
               },
               child: Text('Opções'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TestePage()),
+                );
+              },
+              child: Text('Teste'),
             ),
           ],
         ),
